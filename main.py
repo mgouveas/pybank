@@ -53,43 +53,58 @@ extrato_deposito = []
 
 opcao = int(input("Escolha a operação que deseja realizar: "));
 
+def sacar(limite_saque, numero_saque):
+    global saldo
+    print('SAQUE.\n');
+    saque = int(input('Valor do saque: '));
+    if saque <= saldo and saque <= limite_saque:
+        numero_saque +=1
+        saldo -= saque
+        print(msg_saque);
+        print(f'\n Saldo da conta: {saldo}');
+        extrato_saque.append(f'R${saque},00');
+        #print(extrato_saque)
+    else:
+        print("Operação negada. Você não tem saldo suficiente em sua conta.");
+
+    return saldo, numero_saque
+
+def depositar():
+    global saldo
+    print('DEPÓSITO \n');
+    deposito = int(input("Digite o valor a ser depositado: "));
+    if deposito > 0:
+        print(msg_deposito);
+        saldo += deposito
+        extrato_deposito.append(f'R${deposito},00')
+        #print(extrato_deposito)
+    else:
+        print("Valor inválido. O valor mínimo de depósito é de R$1")
+
+    return saldo
+
+def extrato():
+    print("EXTRATO \n");
+    print(msg_extrato);
+    print(f'Saldo atual: R${saldo}.\n\n');
+    print(f'Depositos: {extrato_deposito}\n');
+    print(f'Saques: {extrato_saque}\n');
+    
+
 while (opcao != 0):
 
     match opcao:
         case 1:
             if numero_saque < qnt_saque_dia:
-                print('SAQUE.\n');
-                saque = int(input('Valor do saque: '));
-                if saque <= saldo and saque <= limite_saque:
-                    numero_saque +=1
-                    saldo -= saque
-                    print(msg_saque);
-                    print(f'\n Saldo da conta: {saldo}');
-                    extrato_saque.append(f'R${saque},00');
-                    print(extrato_saque)
-                else:
-                    print("Operação negada. Você não tem saldo suficiente em sua conta.");
+                sacar(limite_saque, numero_saque)
             else:
                 print("Operação Negada. Limite de saque diário atingido.")
 
         case 2:
-            print('DEPÓSITO \n');
-            deposito = int(input("Digite o valor a ser depositado: "));
-            if deposito > 0:
-                print(msg_deposito);
-                saldo += deposito
-                extrato_deposito.append(f'R${deposito},00')
-                print(extrato_deposito)
-            else:
-                print("Valor inválido. O valor mínimo de depósito é de R$1")
-
+            depositar()
 
         case 3:
-            print("EXTRATO \n");
-            print(msg_extrato);
-            print(f'Saldo atual: R${saldo}.\n\n');
-            print(f'Depositos: {extrato_deposito}\n');
-            print(f'Saques: {extrato_saque}\n');
+            extrato()
         
         case _:
             print("Opção inválida. \n\n")
