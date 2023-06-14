@@ -1,3 +1,5 @@
+import textwrap
+
 menu = """
 ====================PyBank====================
 
@@ -5,8 +7,13 @@ menu = """
 
    Escolha uma das Opções do nosso sistema
 
-   1 - SAQUE            3 - EXTRATO
-   2 - DEPOSITO         0 - SAIR
+   1 - SAQUE
+   2 - DEPOSITO
+   3 - EXTRATO
+   4 - NOVO USUÁRIO
+   5 - NOVA CONTA
+   6 - LISTAR CONTAS
+   0 - SAIR
 
    Informações Importantes:
     * Você pode realizar até 3 saques/dia
@@ -51,7 +58,13 @@ extrato_saque = []
 
 extrato_deposito = []
 
+clientes = []
+contas = []
+
+AGENCIA = "0001"
+
 opcao = int(input("Escolha a operação que deseja realizar: "));
+
 
 def sacar(limite_saque, numero_saque):
     global saldo
@@ -89,7 +102,48 @@ def extrato():
     print(f'Saldo atual: R${saldo}.\n\n');
     print(f'Depositos: {extrato_deposito}\n');
     print(f'Saques: {extrato_saque}\n');
-    
+
+def cria_usuario(clientes):
+    print("Criação de usuário")
+    cpf = input("Digite seu CPF (somente números): ")
+    cliente = filtrar_clientes(cpf, clientes)
+
+    if cliente:
+        print("Já existe um usuário com esse CPF cadastrado em nosso sistema.")
+        return
+
+    nome = input("Digite seu nome completo: ").upper()
+    data_nascimento = input("Digite sua data de nascimento (dd-mm-aaaa): ")
+    endereco = input("Digite seu endereço completo: ")
+
+    clientes.append({"nome": nome, "data_nascimento": data_nascimento, "cpf": cpf, "endereco": endereco})
+
+    print("Usuário criado com sucesso! Bem Vindo ao PyBank.")
+
+def filtrar_clientes(cpf, clientes):
+    clientes_filtrados = [cliente for cliente in clientes if cliente["cpf"] == cpf]
+    return clientes_filtrados[0] if clientes_filtrados else None
+
+def criar_conta(agencia, numero_conta, clientes):
+    cpf = input("Digite seu CPF (somente números): ")
+    cliente = filtrar_clientes(cpf, clientes)
+
+    if cliente:
+        print("Conta criada com sucesso!")
+        return {"agencia": agencia, "numero_conta": numero_conta, "cliente": cliente}
+    else:
+        print("Cliente não encontrado.")
+
+def listar_contas(contas):
+    for conta in contas:
+        linha = f"""\
+                Agência:\t{conta['agencia']}
+                C/C:\t\t{conta['numero_conta']}
+                Titular:\t{conta['cliente']['nome']}
+            """
+        print("=" * 100)
+        print(textwrap.dedent(linha))
+
 
 while (opcao != 0):
 
@@ -105,6 +159,19 @@ while (opcao != 0):
 
         case 3:
             extrato()
+
+        case 4:
+            cria_usuario(clientes)
+        
+        case 5:
+            numero_conta = len(contas) + 1
+            conta = criar_conta(AGENCIA, numero_conta, clientes)
+
+            if conta:
+                contas.append(conta)
+        
+        case 6:
+            listar_contas(contas)
         
         case _:
             print("Opção inválida. \n\n")
