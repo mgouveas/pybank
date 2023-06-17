@@ -1,84 +1,192 @@
 import textwrap
+from abc import ABC, abstractclassmethod, abstractproperty
+from datetime import datetime
 
-menu = """
-====================PyBank====================
+class Cliente:
+    def __init__(self, endereco):
+        self.endereco = endereco
+        self.contas = []
+    
+    def realizar_transacao(self, conta, transacao):
+        transacao.registrar(conta)
+    
+    def adicionar_conta(self, conta):
+        self.contas.append(conta)
 
-===========Seja Bem-Vindo ao Pybank===========
+class Pessoa_Fisica(Cliente):
+    def __init__(self, nome, data_nascimento, cpf, endereco):
+        super().__init__(endereco)
+        self.nome = nome
+        self.data_nascimento = data_nascimento
+        self.cpf = cpf
 
-   Escolha uma das Opções do nosso sistema
+class Pessoa_Juridica(Cliente):
+    def __init__(self, razao_social, cnpj, endereco):
+        super().__init__(endereco)
+        self.razao_social = razao_social
+        self.cnpj = cnpj
 
-   1 - SAQUE
-   2 - DEPOSITO
-   3 - EXTRATO
-   4 - NOVO USUÁRIO
-   5 - NOVA CONTA
-   6 - LISTAR CONTAS
-   0 - SAIR
+class Conta:
+    def __init__(self, numero, cliente):
+        self._saldo = 0
+        self._numero = numero
+        self._agencia = "0001"
+        self._cliente = cliente
+        self._historico = Historico()
 
-   Informações Importantes:
-    * Você pode realizar até 3 saques/dia
-    * Seu limite por saque é de R$500,00
+    @classmethod
+    def nova_conta(cls, cliente, numero):
+        return cls(numero, cliente)
 
-==============================================
-""";
+    @property
+    def saldo(self):
+        return self._saldo
+    
+    @property
+    def numero(self):
+        return self._numero
+    
+    @property
+    def agencia(self):
+        return self._agencia
+    
+    @property
+    def cliente(self):
+        return self._cliente
+    
+    @property
+    def historico(self):
+        return self._historico
+    
+    def sacar(self, valor):
+        saldo = self.saldo
 
-msg_saque = """
-Saque autorizado!
+        if valor > saldo:
+            print("Operação negada. Você não tem saldo suficiente em sua conta.")
+        
+        elif valor > 0:
+            self._saldo -= valor
+            print("""
+                Saque autorizado!
 
-Aguarde a contagem das notas....
+                Aguarde a contagem das notas....
 
-Operação concluída. Retire seus notas da máquina. 
-""";
+                Operação concluída. Retire seus notas da máquina. 
+            """);
+            return True
+        
+        else:
+            print("Falha na operação. O valor informado é inválido.")
 
-msg_deposito = """
-Insira as notas no local indicado.
+    def depositar(self, valor):
+        if valor > 0:
+            self._saldo += valor
+            print("""
+                Insira as notas no local indicado.
 
-Aguarde a contagem das notas....
+                Aguarde a contagem das notas....
 
-Operação concluída. Depósito realizado com sucesso. 
-""";
+                Operação concluída. Depósito realizado com sucesso. 
+            """);
+        else:
+            print("Valor inválido. O valor mínimo de depósito é de R$1!")
+            return False
+        
+        return True
 
-msg_extrato = """
-Registro das últimas operações realizadas nessa conta.
+class Conta_Corrente(Conta):
+    def __init__(self, numero, cliente, limite, limite_saque):
+        super().__init__(numero, cliente)
+        self._limite = limite
+        limite = 500 
+        self._limite_saque = limite_saque
+        limite_saque = 3 
+        #Numa atualização futura será implementada uma regra para valdiar o tipo de conta para ter o valor limite de saque e o número de saques definidos mais dinamicamente
 
-Aguarde a exibição das informações em tela....
+    def sacar(self, valor):
+        numero_saques = len(
+            [transacao for transacao in self.historico.transacoes in transacao["tipo"] == Saque.__name__]
+        )
 
-Operação concluída. Confira abaixo o seu extrato. 
-""";
+        if valor > self._limite:
+            print("Operação negada! Valor do saque excede o limite de saque diário.")
+        
+        elif numero_saques >= self._limite_saque:
+            print("Operação negada! Quantidade de saques diárias atingida.")
+        
+        else:
+            return super().sacar(valor)
+    
+        return False
 
-print(menu);
-
-limite_saque = 500;
-numero_saque = 0;
-qnt_saque_dia = 3;
-
-saldo = 0;
-
-extrato_saque = []
-
-extrato_deposito = []
-
-clientes = []
-contas = []
-
-AGENCIA = "0001"
-
-opcao = int(input("Escolha a operação que deseja realizar: "));
+    def __str__(self):
+        return f"""
+            Agência:\t{self.agencia}
+            C/C:\t\t{self.numero}
+            Titular:\t{self.cliente.nome}
+        """
 
 
-def sacar(limite_saque, numero_saque):
-    global saldo
+class Historico:
+    pass
+
+class Transacao(ABC):
+    pass
+
+class Saque(Transacao):
+    pass
+
+class Deposito(Transacao):
+    pass
+
+
+
+def menu():
+    menu = """
+    ====================PyBank====================
+
+    ===========Seja Bem-Vindo ao Pybank===========
+
+    Escolha uma das Opções do nosso sistema
+
+    1 - SAQUE
+    2 - DEPOSITO
+    3 - EXTRATO
+    4 - NOVO USUÁRIO
+    5 - NOVA CONTA
+    6 - LISTAR CONTAS
+    0 - SAIR
+
+    Informações Importantes:
+        * Você pode realizar até 3 saques/dia
+        * Seu limite por saque é de R$500,00
+
+    ==============================================
+    """;
+
+    print(menu)
+
+    opcao = int(input("Escolha a operação que deseja realizar: "));
+
+    return opcao
+
+def sacar():
+    numero_saque = 0;
+    qnt_saque_dia = 3;
+    limite_saque = 500
     print('SAQUE.\n');
     saque = int(input('Valor do saque: '));
-    if saque <= saldo and saque <= limite_saque:
-        numero_saque +=1
-        saldo -= saque
-        print(msg_saque);
-        print(f'\n Saldo da conta: {saldo}');
-        extrato_saque.append(f'R${saque},00');
-        #print(extrato_saque)
+    if numero_saque < qnt_saque_dia:
+        if saque <= saldo and saque <= limite_saque:
+            numero_saque +=1
+            saldo -= saque
+            
+            print(f'\n Saldo da conta: {saldo}');
+            extrato_saque.append(f'R${saque},00');
+            #print(extrato_saque)
+           
     else:
-        print("Operação negada. Você não tem saldo suficiente em sua conta.");
+        print("Operação Negada. Limite de saque diário atingido.")
 
     return saldo, numero_saque
 
@@ -87,18 +195,23 @@ def depositar():
     print('DEPÓSITO \n');
     deposito = int(input("Digite o valor a ser depositado: "));
     if deposito > 0:
-        print(msg_deposito);
+        
         saldo += deposito
         extrato_deposito.append(f'R${deposito},00')
         #print(extrato_deposito)
-    else:
-        print("Valor inválido. O valor mínimo de depósito é de R$1")
+        
 
     return saldo
 
-def extrato():
+def extrato(extrato_saque, extrato_deposito, saldo):
     print("EXTRATO \n");
-    print(msg_extrato);
+    print("""
+        Registro das últimas operações realizadas nessa conta.
+
+        Aguarde a exibição das informações em tela....
+
+        Operação concluída. Confira abaixo o seu extrato. 
+    """);
     print(f'Saldo atual: R${saldo}.\n\n');
     print(f'Depositos: {extrato_deposito}\n');
     print(f'Saques: {extrato_saque}\n');
@@ -144,42 +257,47 @@ def listar_contas(contas):
         print("=" * 100)
         print(textwrap.dedent(linha))
 
+def main():
 
-while (opcao != 0):
+    extrato_saque = []
 
-    match opcao:
-        case 1:
-            if numero_saque < qnt_saque_dia:
-                sacar(limite_saque, numero_saque)
-            else:
-                print("Operação Negada. Limite de saque diário atingido.")
+    extrato_deposito = []
+    clientes = []
+    contas = []
 
-        case 2:
-            depositar()
 
-        case 3:
-            extrato()
+    while True:
+        opcao = menu();
 
-        case 4:
-            cria_usuario(clientes)
-        
-        case 5:
-            numero_conta = len(contas) + 1
-            conta = criar_conta(AGENCIA, numero_conta, clientes)
+        match opcao:
+            case 1:
+                sacar()                
 
-            if conta:
-                contas.append(conta)
-        
-        case 6:
-            listar_contas(contas)
-        
-        case _:
-            print("Opção inválida. \n\n")
-    
-    _ = str(input("Obrigado por usar nosso banco. Deseja fazer outra operação: [S] SIM | [N] Não > ")).upper()
-    
-    if _ == 'S':
-        opcao = int(input("\n\n Escolha a operação que deseja realizar: "));
-    else:
-        opcao = 0;
-        print("\n\nSistema sendo encerrado. Volte sempre!\n")
+            case 2:
+                depositar()
+
+            case 3:
+                extrato(extrato_saque, extrato_deposito, saldo)
+
+            case 4:
+                cria_usuario(clientes)
+            
+            case 5:
+                numero_conta = len(contas) + 1
+                conta = criar_conta(AGENCIA, numero_conta, clientes)
+
+                if conta:
+                    contas.append(conta)
+            
+            case 6:
+                listar_contas(contas)
+
+            case 0:
+                break
+
+        print("Opção inválida. \n\n")
+
+
+    print("\n\nSistema sendo encerrado. Volte sempre!\n")
+
+main()
