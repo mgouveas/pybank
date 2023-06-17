@@ -1,5 +1,5 @@
 import textwrap
-from abc import ABC, abstractclassmethod, abstractproperty
+from abc import ABC, ABCMeta, abstractclassmethod, abstractproperty
 from datetime import datetime
 
 class Cliente:
@@ -126,20 +126,60 @@ class Conta_Corrente(Conta):
             Titular:\t{self.cliente.nome}
         """
 
-
 class Historico:
-    pass
+    def __init__(self):
+        self._transacoes = []
+    
+    @property
+    def transacoes(self):
+        return self._transacoes
+    
+    def adicionar_transacao(self, transacao):
+        self._transacoes.append(
+            {
+                "tipo": transacao.__class__.__name__,
+                "valor": transacao.valor,
+                "data": datetime.now().strftime("%d-%m-%Y %H:%M:%s"),
+            }
+        )
 
 class Transacao(ABC):
-    pass
+    @property
+    @abstractclassmethod
+    def valor(self):
+        pass
+
+    @abstractclassmethod
+    def registrar(self, conta):
+        pass
 
 class Saque(Transacao):
-    pass
+    def __init__(self, valor):
+        self._valor = valor
+
+    @property
+    def valor(self):
+        return self._valor
+    
+    def registar(self, conta):
+        sucesso_transacao = conta.sacar(self.valor)
+
+        if sucesso_transacao:
+            conta.historico.adicionar_transacao(self)
 
 class Deposito(Transacao):
-    pass
+    def __init__(self, valor):
+        self._valor = valor
+    
+    @property
+    def valor(self):
+        return self._valor
+    
+    def registrar(self, conta):
+        sucesso_transacao = conta.depositar(self.valor)
 
-
+        if sucesso_transacao:
+            conta.historico.adicionar_transacao(self)
 
 def menu():
     menu = """
@@ -190,18 +230,32 @@ def sacar():
 
     return saldo, numero_saque
 
-def depositar():
-    global saldo
-    print('DEPÓSITO \n');
-    deposito = int(input("Digite o valor a ser depositado: "));
-    if deposito > 0:
-        
-        saldo += deposito
-        extrato_deposito.append(f'R${deposito},00')
-        #print(extrato_deposito)
-        
+def recurperar_conta_cliente(cliente):
+    if not cliente.conta:
+        print("Falha na operação! Cliente informado não possui nenhuma conta registrada.")
+        return
+    # FIXME:
+    return cliente.conta[0]
 
-    return saldo
+def depositar(clientes):
+    print('DEPÓSITO \n');
+
+    cpf = input("Digite seu CPF: ")
+    cliente = filtrar_clientes(cpf, clientes)
+    
+    if not cliente:
+        print("Cliente não encontrado. Vefique o CPF digitado e tente novamente.")
+        return
+    
+    valor_deposito = int(input("Digite o valor a ser depositado: "))
+    transacao = Deposito(valor_deposito)
+
+    conta = recurperar_conta_cliente(cliente):
+    if not conta:
+        return
+
+    cliente.realizar_transacao(conta, transacao)
+
 
 def extrato(extrato_saque, extrato_deposito, saldo):
     print("EXTRATO \n");
