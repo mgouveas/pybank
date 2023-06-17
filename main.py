@@ -1,6 +1,7 @@
 import textwrap
-from abc import ABC, ABCMeta, abstractclassmethod, abstractproperty
+from abc import ABC, abstractclassmethod, abstractproperty
 from datetime import datetime
+import time
 
 class Cliente:
     def __init__(self, endereco):
@@ -105,7 +106,7 @@ class Conta_Corrente(Conta):
 
     def sacar(self, valor):
         numero_saques = len(
-            [transacao for transacao in self.historico.transacoes in transacao["tipo"] == Saque.__name__]
+            [transacao for transacao in self.historico.transacoes if transacao["tipo"] == Saque.__name__]
         )
 
         if valor > self._limite:
@@ -144,7 +145,7 @@ class Historico:
         )
 
 class Transacao(ABC):
-    @property
+    @property # type: ignore
     @abstractclassmethod
     def valor(self):
         pass
@@ -210,25 +211,23 @@ def menu():
 
     return opcao
 
-def sacar():
-    numero_saque = 0;
-    qnt_saque_dia = 3;
-    limite_saque = 500
-    print('SAQUE.\n');
-    saque = int(input('Valor do saque: '));
-    if numero_saque < qnt_saque_dia:
-        if saque <= saldo and saque <= limite_saque:
-            numero_saque +=1
-            saldo -= saque
-            
-            print(f'\n Saldo da conta: {saldo}');
-            extrato_saque.append(f'R${saque},00');
-            #print(extrato_saque)
-           
-    else:
-        print("Operação Negada. Limite de saque diário atingido.")
+def sacar(clientes):
+    print("SAQUE \n");
+    cpf = input("Digite seu CPF: ")
+    cliente = filtrar_clientes(cpf, clientes)
 
-    return saldo, numero_saque
+    if not cliente:
+        print("Cliente não encontrado. Vefique o CPF digitado e tente novamente.")
+        return
+    
+    valor = int(input("Digite o valor a ser sacado: "))
+    transacao = Saque(valor)
+
+    conta = recurperar_conta_cliente(cliente)
+    if not conta:
+        return
+    
+    cliente.realizar_transacao(conta, transacao)
 
 def recurperar_conta_cliente(cliente):
     if not cliente.conta:
@@ -250,25 +249,44 @@ def depositar(clientes):
     valor_deposito = int(input("Digite o valor a ser depositado: "))
     transacao = Deposito(valor_deposito)
 
-    conta = recurperar_conta_cliente(cliente):
+    conta = recurperar_conta_cliente(cliente)
     if not conta:
         return
 
     cliente.realizar_transacao(conta, transacao)
 
-
-def extrato(extrato_saque, extrato_deposito, saldo):
+def extrato(clientes):
     print("EXTRATO \n");
+    cpf = input("Digite seu CPF: ")
+    cliente = filtrar_clientes(cpf, clientes)
+    
+    if not cliente:
+        print("Cliente não encontrado. Vefique o CPF digitado e tente novamente.")
+        return
+    
+    conta = recurperar_conta_cliente(cliente)
+    if not conta:
+        return
+    
     print("""
-        Registro das últimas operações realizadas nessa conta.
+        EXTRATO DA CONTA.
 
         Aguarde a exibição das informações em tela....
 
         Operação concluída. Confira abaixo o seu extrato. 
     """);
-    print(f'Saldo atual: R${saldo}.\n\n');
-    print(f'Depositos: {extrato_deposito}\n');
-    print(f'Saques: {extrato_saque}\n');
+    transacoes = conta.historico.transacoes
+
+    extrato = ""
+    if not transacoes:
+        extrato = "Não foram realizados movementações nos últimos 30 dias."
+    else: 
+        for transacao in transacoes:
+            extrato += f"\n{transacao['tipo']}: \n\tR$ {transacao['valor']:.2f}"
+        
+    print(extrato)
+    print("\nSaldo:\n\t R$ {conta.saldo:.2f}")
+    print("="*50)
 
 def cria_usuario(clientes):
     print("Criação de usuário")
@@ -283,7 +301,9 @@ def cria_usuario(clientes):
     data_nascimento = input("Digite sua data de nascimento (dd-mm-aaaa): ")
     endereco = input("Digite seu endereço completo: ")
 
-    clientes.append({"nome": nome, "data_nascimento": data_nascimento, "cpf": cpf, "endereco": endereco})
+    cliente = Pessoa_Fisica(nome=nome, data_nascimento=data_nascimento, cpf=cpf, endereco=endereco)
+
+    clientes.append(cliente)
 
     print("Usuário criado com sucesso! Bem Vindo ao PyBank.")
 
@@ -291,57 +311,47 @@ def filtrar_clientes(cpf, clientes):
     clientes_filtrados = [cliente for cliente in clientes if cliente["cpf"] == cpf]
     return clientes_filtrados[0] if clientes_filtrados else None
 
-def criar_conta(agencia, numero_conta, clientes):
+def criar_conta(clientes, contas):
     cpf = input("Digite seu CPF (somente números): ")
     cliente = filtrar_clientes(cpf, clientes)
+    numero_conta = len(contas) + 1
 
-    if cliente:
-        print("Conta criada com sucesso!")
-        return {"agencia": agencia, "numero_conta": numero_conta, "cliente": cliente}
-    else:
-        print("Cliente não encontrado.")
+    if not cliente:
+        print("Falha na operação! Cliente não encontrada.")
+        return
+    
+    conta = Conta_Corrente.nova_conta(cliente=cliente, numero=numero_conta)
+    contas.append(conta)
+
+    print("Conta aberta com sucesso!")
 
 def listar_contas(contas):
     for conta in contas:
-        linha = f"""\
-                Agência:\t{conta['agencia']}
-                C/C:\t\t{conta['numero_conta']}
-                Titular:\t{conta['cliente']['nome']}
-            """
         print("=" * 100)
-        print(textwrap.dedent(linha))
+        print(textwrap.dedent(str(conta)))
 
 def main():
-
-    extrato_saque = []
-
-    extrato_deposito = []
     clientes = []
     contas = []
-
 
     while True:
         opcao = menu();
 
         match opcao:
             case 1:
-                sacar()                
+                sacar(clientes)                
 
             case 2:
-                depositar()
+                depositar(clientes)
 
             case 3:
-                extrato(extrato_saque, extrato_deposito, saldo)
+                extrato(clientes)
 
             case 4:
                 cria_usuario(clientes)
             
             case 5:
-                numero_conta = len(contas) + 1
-                conta = criar_conta(AGENCIA, numero_conta, clientes)
-
-                if conta:
-                    contas.append(conta)
+                criar_conta(clientes, contas)
             
             case 6:
                 listar_contas(contas)
@@ -349,8 +359,9 @@ def main():
             case 0:
                 break
 
-        print("Opção inválida. \n\n")
-
+            case _:
+                print("Opção inválida. \n\n")
+                time.sleep(2)
 
     print("\n\nSistema sendo encerrado. Volte sempre!\n")
 
