@@ -3,6 +3,7 @@ from abc import ABC, abstractclassmethod, abstractproperty
 from datetime import datetime
 import time
 
+
 class Cliente:
     def __init__(self, endereco):
         self.endereco = endereco
@@ -14,18 +15,21 @@ class Cliente:
     def adicionar_conta(self, conta):
         self.contas.append(conta)
 
-class Pessoa_Fisica(Cliente):
+
+class PessoaFisica(Cliente):
     def __init__(self, nome, data_nascimento, cpf, endereco):
         super().__init__(endereco)
         self.nome = nome
         self.data_nascimento = data_nascimento
         self.cpf = cpf
 
-class Pessoa_Juridica(Cliente):
+
+class PessoaJuridica(Cliente):
     def __init__(self, razao_social, cnpj, endereco):
         super().__init__(endereco)
         self.razao_social = razao_social
         self.cnpj = cnpj
+
 
 class Conta:
     def __init__(self, numero, cliente):
@@ -97,7 +101,8 @@ class Conta:
         
         return True
 
-class Conta_Corrente(Conta):
+
+class ContaCorrente(Conta):
     def __init__(self, numero, cliente, limite=500, limite_saque=3):
         super().__init__(numero, cliente)
         self._limite = limite
@@ -127,6 +132,7 @@ class Conta_Corrente(Conta):
             Titular:\t{self.cliente.nome}
         """
 
+
 class Historico:
     def __init__(self):
         self._transacoes = []
@@ -144,6 +150,7 @@ class Historico:
             }
         )
 
+
 class Transacao(ABC):
     @property # type: ignore
     @abstractproperty
@@ -153,6 +160,7 @@ class Transacao(ABC):
     @abstractclassmethod
     def registrar(self, conta):
         pass
+
 
 class Saque(Transacao):
     def __init__(self, valor):
@@ -168,6 +176,7 @@ class Saque(Transacao):
         if sucesso_transacao:
             conta.historico.adicionar_transacao(self)
 
+
 class Deposito(Transacao):
     def __init__(self, valor):
         self._valor = valor
@@ -181,6 +190,7 @@ class Deposito(Transacao):
 
         if sucesso_transacao:
             conta.historico.adicionar_transacao(self)
+
 
 def menu():
     menu = """
@@ -211,6 +221,7 @@ def menu():
 
     return opcao
 
+
 def sacar(clientes):
     print("SAQUE \n");
     cpf = input("Digite seu CPF: ")
@@ -229,12 +240,14 @@ def sacar(clientes):
     
     cliente.realizar_transacao(conta, transacao)
 
+
 def recurperar_conta_cliente(cliente):
     if not cliente.contas:
         print("Falha na operação! Cliente informado não possui nenhuma conta registrada.")
         return
     # FIXME:
     return cliente.contas[0]
+
 
 def depositar(clientes):
     print('DEPÓSITO \n');
@@ -254,6 +267,7 @@ def depositar(clientes):
         return
 
     cliente.realizar_transacao(conta, transacao)
+
 
 def extrato(clientes):
     print("EXTRATO \n");
@@ -288,6 +302,7 @@ def extrato(clientes):
     print(f"\nSaldo:\n\t R$ {conta.saldo:.2f}")
     print("="*50)
 
+
 def cria_usuario(clientes):
     print("Criação de usuário")
     cpf = input("Digite seu CPF (somente números): ")
@@ -301,15 +316,17 @@ def cria_usuario(clientes):
     data_nascimento = input("Digite sua data de nascimento (dd-mm-aaaa): ")
     endereco = input("Digite seu endereço completo: ")
 
-    cliente = Pessoa_Fisica(nome=nome, data_nascimento=data_nascimento, cpf=cpf, endereco=endereco)
+    cliente = PessoaFisica(nome=nome, data_nascimento=data_nascimento, cpf=cpf, endereco=endereco)
 
     clientes.append(cliente)
 
     print("Usuário criado com sucesso! Bem Vindo ao PyBank.")
 
+
 def filtrar_clientes(cpf, clientes):
     clientes_filtrados = [cliente for cliente in clientes if cliente.cpf == cpf]
     return clientes_filtrados[0] if clientes_filtrados else None
+
 
 def criar_conta(numero_conta, clientes, contas):
     cpf = input("Digite seu CPF (somente números): ")
@@ -319,16 +336,18 @@ def criar_conta(numero_conta, clientes, contas):
         print("Falha na operação! Cliente não encontrada.")
         return
     
-    conta = Conta_Corrente.nova_conta(cliente=cliente, numero=numero_conta)
+    conta = ContaCorrente.nova_conta(cliente=cliente, numero=numero_conta)
     contas.append(conta)
     cliente.contas.append(conta)
 
     print("Conta aberta com sucesso!")
 
+
 def listar_contas(contas):
     for conta in contas:
         print("=" * 100)
         print(textwrap.dedent(str(conta)))
+
 
 def main():
     clientes = []
@@ -365,5 +384,6 @@ def main():
                 time.sleep(2)
 
     print("\n\nSistema sendo encerrado. Volte sempre!\n")
+
 
 main()
