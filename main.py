@@ -78,6 +78,8 @@ class Conta:
         
         else:
             print("Falha na operação. O valor informado é inválido.")
+        
+        return False
 
     def depositar(self, valor):
         if valor > 0:
@@ -96,17 +98,15 @@ class Conta:
         return True
 
 class Conta_Corrente(Conta):
-    def __init__(self, numero, cliente, limite, limite_saque):
+    def __init__(self, numero, cliente, limite=500, limite_saque=3):
         super().__init__(numero, cliente)
         self._limite = limite
-        limite = 500 
         self._limite_saque = limite_saque
-        limite_saque = 3 
         #Numa atualização futura será implementada uma regra para valdiar o tipo de conta para ter o valor limite de saque e o número de saques definidos mais dinamicamente
 
     def sacar(self, valor):
         numero_saques = len(
-            [transacao for transacao in self.historico.transacoes if transacao["tipo"] == Saque.__name__]
+            [transacao for transacao in self.historico.transacoes if transacao["tipo"] == "Saque"]
         )
 
         if valor > self._limite:
@@ -140,13 +140,13 @@ class Historico:
             {
                 "tipo": transacao.__class__.__name__,
                 "valor": transacao.valor,
-                "data": datetime.now().strftime("%d-%m-%Y %H:%M:%s"),
+                "data": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             }
         )
 
 class Transacao(ABC):
     @property # type: ignore
-    @abstractclassmethod
+    @abstractproperty
     def valor(self):
         pass
 
@@ -162,7 +162,7 @@ class Saque(Transacao):
     def valor(self):
         return self._valor
     
-    def registar(self, conta):
+    def registrar(self, conta):
         sucesso_transacao = conta.sacar(self.valor)
 
         if sucesso_transacao:
@@ -230,11 +230,11 @@ def sacar(clientes):
     cliente.realizar_transacao(conta, transacao)
 
 def recurperar_conta_cliente(cliente):
-    if not cliente.conta:
+    if not cliente.contas:
         print("Falha na operação! Cliente informado não possui nenhuma conta registrada.")
         return
     # FIXME:
-    return cliente.conta[0]
+    return cliente.contas[0]
 
 def depositar(clientes):
     print('DEPÓSITO \n');
@@ -246,8 +246,8 @@ def depositar(clientes):
         print("Cliente não encontrado. Vefique o CPF digitado e tente novamente.")
         return
     
-    valor_deposito = int(input("Digite o valor a ser depositado: "))
-    transacao = Deposito(valor_deposito)
+    valor = int(input("Digite o valor a ser depositado: "))
+    transacao = Deposito(valor)
 
     conta = recurperar_conta_cliente(cliente)
     if not conta:
@@ -285,7 +285,7 @@ def extrato(clientes):
             extrato += f"\n{transacao['tipo']}: \n\tR$ {transacao['valor']:.2f}"
         
     print(extrato)
-    print("\nSaldo:\n\t R$ {conta.saldo:.2f}")
+    print(f"\nSaldo:\n\t R$ {conta.saldo:.2f}")
     print("="*50)
 
 def cria_usuario(clientes):
@@ -308,13 +308,12 @@ def cria_usuario(clientes):
     print("Usuário criado com sucesso! Bem Vindo ao PyBank.")
 
 def filtrar_clientes(cpf, clientes):
-    clientes_filtrados = [cliente for cliente in clientes if cliente["cpf"] == cpf]
+    clientes_filtrados = [cliente for cliente in clientes if cliente.cpf == cpf]
     return clientes_filtrados[0] if clientes_filtrados else None
 
-def criar_conta(clientes, contas):
+def criar_conta(numero_conta, clientes, contas):
     cpf = input("Digite seu CPF (somente números): ")
     cliente = filtrar_clientes(cpf, clientes)
-    numero_conta = len(contas) + 1
 
     if not cliente:
         print("Falha na operação! Cliente não encontrada.")
@@ -322,6 +321,7 @@ def criar_conta(clientes, contas):
     
     conta = Conta_Corrente.nova_conta(cliente=cliente, numero=numero_conta)
     contas.append(conta)
+    cliente.contas.append(conta)
 
     print("Conta aberta com sucesso!")
 
@@ -351,7 +351,8 @@ def main():
                 cria_usuario(clientes)
             
             case 5:
-                criar_conta(clientes, contas)
+                numero_conta = len(contas) + 1
+                criar_conta(numero_conta, clientes, contas)
             
             case 6:
                 listar_contas(contas)
