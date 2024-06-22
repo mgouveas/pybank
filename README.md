@@ -1,6 +1,6 @@
 # Sistema bancário *_PyBank_*.
 
-### Projeto criado no módulo de fundamentos do curso de Python da DIO.me. O Desafio consiste em criar um sistema bancário em python segindo com as funcionalidades e regras de negócio abaixo listadas.
+### Projeto criado no módulo de fundamentos do curso de Python da DIO.me. O Desafio consiste em criar um sistema bancário em python com as funcionalidades e regras de negócio abaixo listadas.
 #
 
 ## Funcionalidades:
